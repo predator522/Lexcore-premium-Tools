@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lexcore Admin Panel</title>
+  <style>
+    :root{
+      --a1:#1d2671; --a2:#c33764; --a3:#ff416c; --a4:#ff4b2b;
+      --glass: rgba(255,255,255,.12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;color:#fff;font-family:Arial,Helvetica,sans-serif;min-height:100vh;
+      background: linear-gradient(135deg,var(--a1),var(--a2),var(--a3),var(--a4));
+      background-size:400% 400%; animation:grad 12s ease infinite;
+    }
+    @keyframes grad{0%{background-position:0 50%}50%{background-position:100% 50%}100%{background-position:0 50%}}
+    header{ text-align:center; padding:26px 16px; font-size:26px; font-weight:800; text-shadow:0 0 14px rgba(255,255,255,.8)}
+    .panel{
+      max-width:560px; margin:18px auto; padding:22px; background:var(--glass); border-radius:18px;
+      box-shadow:0 0 20px rgba(0,0,0,.4); backdrop-filter: blur(6px);
+    }
+    .row{ display:grid; grid-template-columns:1fr; gap:10px; margin:10px 0}
+    input,button,textarea{
+      width:100%; padding:12px; border:none; border-radius:10px; font-size:16px;
+    }
+    input,textarea{ background:#fff; color:#000 }
+    button{ background:linear-gradient(45deg,#00c6ff,#0072ff); color:#fff; font-weight:700; cursor:pointer }
+    button:hover{ background:linear-gradient(45deg,#ff512f,#dd2476) }
+    .tools{ display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); margin-top:10px}
+    .tool{ background:var(--glass); padding:14px; border-radius:14px }
+    .tool h4{ margin:0 0 8px; color:#ffeb3b }
+    .danger{ background:linear-gradient(45deg,#ff1744,#ff5252)}
+    .muted{ opacity:.9; font-size:14px}
+  </style>
+</head>
+<body>
+  <header>⚡ Lexcore Admin Panel ⚡</header>
+
+  <!-- Login -->
+  <div class="panel" id="loginPanel">
+    <h3>Admin Login</h3>
+    <div class="row">
+      <input id="adminPassInput" type="password" placeholder="Enter Admin Password (default: King Tesla)"/>
+      <button id="loginBtn">Login</button>
+    </div>
+    <p class="muted">Tip: You can change this password below after logging in.</p>
+  </div>
+
+  <!-- Admin Content -->
+  <div class="panel" id="mainPanel" style="display:none;">
+    <h3>Manage Tools (Global)</h3>
+    <div class="row">
+      <input id="toolName" type="text" placeholder="Tool Name"/>
+      <input id="toolLink" type="text" placeholder="Download Link (URL)"/>
+      <textarea id="toolDesc" rows="2" placeholder="Short description (optional)"></textarea>
+      <button id="addBtn">➕ Add Tool</button>
+    </div>
+    <div id="status" class="muted"></div>
+    <div class="tools" id="toolList"></div>
+  </div>
+
+  <!-- Password settings -->
+  <div class="panel" id="settingsPanel" style="display:none;">
+    <h3>Settings</h3>
+    <div class="row">
+      <input id="newAdminPass" type="text" placeholder="New Admin Password (for this browser)"/>
+      <button id="changeAdminBtn">Change Admin Password</button>
+    </div>
+    <div class="row">
+      <input id="newToolkitPass" type="text" placeholder="New Toolkit View Password (shown on index)"/>
+      <button id="changeToolkitBtn">Change Toolkit Password</button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================
+       JSONBIN CONFIG (SHARED)
+       ========================= */
+    const BIN_ID  = "68b01908ae596e708fd9d7ed";     // <-- SAME as index.html
+    const API_KEY = "$2a$10$JGRQTj.hSG5JBwt.sbxTxem2drGj0diI1p81318H6O12kD4ljsyHK";    // <-- SAME as index.html
+    const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+    /* =========================
+       ADMIN LOGIN (local)
+       ========================= */
+    if(!localStorage.getItem("adminPassword")){
+      localStorage.setItem("adminPassword","King Tesla");
+    }
+    const loginPanel = document.getElementById("loginPanel");
+    const mainPanel  = document.getElementById("mainPanel");
+    const settingsPanel = document.getElementById("settingsPanel");
+    document.getElementById("loginBtn").addEventListener("click", ()=>{
+      const entered = document.getElementById("adminPassInput").value.trim();
+      if(entered === localStorage.getItem("adminPassword")){
+        loginPanel.style.display = "none";
+        mainPanel.style.display = "block";
+        settingsPanel.style.display = "block";
+        loadTools();
+      }else{
+        alert("❌ Wrong admin password!");
+      }
+    });
+
+    document.getElementById("changeAdminBtn").addEventListener("click", ()=>{
+      const v = document.getElementById("newAdminPass").value.trim();
+      if(!v){ alert("Enter a new admin password"); return; }
+      localStorage.setItem("adminPassword", v);
+      alert("✅ Admin password updated for this browser.");
+      document.getElementById("newAdminPass").value = "";
+    });
+
+    document.getElementById("changeToolkitBtn").addEventListener("click", ()=>{
+      const v = document.getElementById("newToolkitPass").value.trim();
+      if(!v){ alert("Enter a new Toolkit password"); return; }
+      localStorage.setItem("toolkitPassword", v);
+      alert("✅ Toolkit (viewer) password updated. Takes effect on index.html.");
+      document.getElementById("newToolkitPass").value = "";
+    });
+
+    /* =========================
+       LOAD / SAVE TOOLS (GLOBAL)
+       ========================= */
+    const toolList = document.getElementById("toolList");
+    const statusEl = document.getElementById("status");
+
+    async function fetchTools(){
+      const res = await fetch(API_URL,{ headers:{ "X-Master-Key": API_KEY }});
+      if(!res.ok) throw new Error("Fetch failed");
+      const data = await res.json();
+      return (data && data.record && data.record.tools) ? data.record.tools : [];
+    }
+
+    async function writeTools(tools){
+      const res = await fetch(API_URL,{
+        method:"PUT",
+        headers:{
+          "Content-Type":"application/json",
+          "X-Master-Key": API_KEY
+        },
+        body: JSON.stringify({ tools })
+      });
+      if(!res.ok) throw new Error("Write failed");
+      return res.json();
+    }
+
+    async function loadTools(){
+      statusEl.textContent = "Loading…";
+      try{
+        const tools = await fetchTools();
+        renderTools(tools);
+        statusEl.textContent = `Loaded ${tools.length} tool(s).`;
+      }catch(e){
+        console.error(e);
+        statusEl.textContent = "⚠️ Couldn’t load tools. Check BIN_ID/API_KEY.";
+      }
+    }
+
+    function renderTools(tools){
+      toolList.innerHTML = "";
+      if(!tools.length){
+        toolList.innerHTML = "<p class='muted'>No tools yet.</p>";
+        return;
+      }
+      tools.forEach((t,i)=>{
+        const desc = t.desc ? `<p class="muted" style="margin:6px 0 10px">${t.desc}</p>` : "";
+        toolList.insertAdjacentHTML("beforeend", `
+          <div class="tool">
+            <h4>${t.name}</h4>
+            ${desc}
+            <p class="muted" style="word-break:break-all">${t.link}</p>
+            <div class="row">
+              <button class="danger" onclick="removeTool(${i})">🗑 Remove</button>
+            </div>
+          </div>
+        `);
+      });
+    }
+
+    document.getElementById("addBtn").addEventListener("click", async ()=>{
+      const name = document.getElementById("toolName").value.trim();
+      const link = document.getElementById("toolLink").value.trim();
+      const desc = document.getElementById("toolDesc").value.trim();
+      if(!name || !link){ alert("Fill name and link"); return; }
+
+      statusEl.textContent = "Adding tool…";
+      try{
+        const tools = await fetchTools();
+        tools.push({ name, link, desc });
+        await writeTools(tools);
+        document.getElementById("toolName").value = "";
+        document.getElementById("toolLink").value = "";
+        document.getElementById("toolDesc").value = "";
+        await loadTools();
+        statusEl.textContent = "✅ Tool added.";
+      }catch(e){
+        console.error(e);
+        statusEl.textContent = "⚠️ Failed to add tool.";
+      }
+    });
+
+    window.removeTool = async (index)=>{
+      statusEl.textContent = "Removing…";
+      try{
+        const tools = await fetchTools();
+        tools.splice(index,1);
+        await writeTools(tools);
+        await loadTools();
+        statusEl.textContent = "✅ Removed.";
+      }catch(e){
+        console.error(e);
+        statusEl.textContent = "⚠️ Failed to remove.";
+      }
+    }
+  </script>
+</body>
+</html>
