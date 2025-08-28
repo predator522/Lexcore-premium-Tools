@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lexcore Premium Tools</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #ff416c, #ff4b2b, #1d2671, #c33764);
+      background-size: 400% 400%;
+      animation: gradientBG 12s ease infinite;
+      margin: 0;
+      padding: 0;
+      color: white;
+      min-height: 100vh;
+    }
+    @keyframes gradientBG {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+    header {
+      text-align: center;
+      padding: 30px;
+      font-size: 28px;
+      font-weight: bold;
+      text-shadow: 0 0 15px rgba(255,255,255,0.8);
+    }
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 25px;
+      padding: 40px;
+    }
+    .tool-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+      transition: transform 0.2s;
+    }
+    .tool-card:hover {
+      transform: scale(1.05);
+    }
+    .tool-card h3 {
+      margin-bottom: 15px;
+      font-size: 22px;
+      color: #ffeb3b;
+    }
+    .tool-card a button {
+      background: linear-gradient(45deg, #00c6ff, #0072ff);
+      border: none;
+      padding: 12px 20px;
+      border-radius: 30px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(0,0,0,0.4);
+      transition: 0.3s;
+    }
+    .tool-card a button:hover {
+      background: linear-gradient(45deg, #ff512f, #dd2476);
+    }
+
+    /* 🔴 Secret Zone */
+    #secretZoneIndex {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 40px;
+      background: transparent;
+      cursor: pointer;
+      z-index: 999;
+    }
+
+    /* Login Screen */
+    #loginScreen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 1000;
+    }
+    #loginScreen h1 {
+      color: #ffeb3b;
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    #loginInput {
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      text-align: center;
+    }
+    #loginButton {
+      margin-top: 15px;
+      padding: 12px 20px;
+      background: linear-gradient(45deg, #00c6ff, #0072ff);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #loginError {
+      margin-top: 10px;
+      color: red;
+      font-weight: bold;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="loginScreen">
+    <h1>🔐 Welcome to King Tesla's Tools<br>Enter Passcode</h1>
+    <input type="password" id="loginInput" placeholder="Enter password">
+    <button id="loginButton">Enter</button>
+    <div id="loginError">❌ Wrong password, try again!</div>
+  </div>
+
+  <!-- Toolkit -->
+  <header style="display:none;">⚡ Lexcore Premium Tools ⚡</header>
+  <section id="tools" class="tools" style="display:none;"></section>
+
+  <!-- Secret Zone -->
+  <div id="secretZoneIndex"></div>
+
+  <script>
+    // Save default Toolkit password
+    if(!localStorage.getItem("toolkitPassword")){
+      localStorage.setItem("toolkitPassword", "T3RROR REBORN");
+    }
+
+    const loginScreen = document.getElementById("loginScreen");
+    const loginInput = document.getElementById("loginInput");
+    const loginButton = document.getElementById("loginButton");
+    const loginError = document.getElementById("loginError");
+
+    loginButton.addEventListener("click", ()=>{
+      let savedToolkitPass = localStorage.getItem("toolkitPassword");
+      if(loginInput.value === savedToolkitPass){
+        loginScreen.style.display = "none";
+        document.querySelector("header").style.display = "block";
+        document.getElementById("tools").style.display = "grid";
+        loadTools();
+      } else {
+        loginError.style.display = "block";
+      }
+    });
+
+    // Load tools
+    function loadTools(){
+      let tools = JSON.parse(localStorage.getItem("tools2")) || [];
+      let container = document.getElementById("tools");
+      container.innerHTML = "";
+      if(tools.length === 0){
+        container.innerHTML = "<p style='text-align:center;color:#fff;'>✨ No tools available yet. Ask admin to add some!</p>";
+      } else {
+        tools.forEach(t=>{
+          container.innerHTML += `
+            <div class="tool-card">
+              <h3>${t.name}</h3>
+              <a href="${t.link}" target="_blank">
+                <button>⬇ Download</button>
+              </a>
+            </div>`;
+        });
+      }
+    }
+
+    // Secret zone (10 taps → Admin)
+    let tapCountIndex = 0;
+    const requiredTapsIndex = 10;
+    const secretZoneIndex = document.getElementById("secretZoneIndex");
+
+    secretZoneIndex.addEventListener("click", ()=>{
+      tapCountIndex++;
+      if(tapCountIndex >= requiredTapsIndex){
+        tapCountIndex = 0;
+        openAdminPanel();
+      }
+    });
+
+    // Admin Panel
+    function openAdminPanel(){
+      let entered = prompt("🔑 Enter Admin Password:");
+      let adminPass = localStorage.getItem("adminPassword") || "King Tesla";
+
+      if(entered === adminPass){
+        document.body.innerHTML = `
+          <header>⚡ Admin Panel ⚡</header>
+          <div style="padding:20px;text-align:center;">
+            <h2>Manage Tools</h2>
+            <button onclick="addTool()">➕ Add Tool</button>
+            <button onclick="resetTools()">♻ Reset Tools</button>
+            <button onclick="changeAdminPass()">🔑 Change Admin Password</button>
+            <p style="margin-top:20px;">Current Admin Password: ${adminPass}</p>
+            <button style="margin-top:20px;" onclick="location.reload()">⬅ Back to Toolkit</button>
+          </div>
+        `;
+      } else {
+        alert("❌ Wrong Admin Password!");
+      }
+    }
+
+    function addTool(){
+      let name = prompt("Tool name?");
+      let link = prompt("Tool link?");
+      if(name && link){
+        let tools = JSON.parse(localStorage.getItem("tools2")) || [];
+        tools.push({name, link});
+        localStorage.setItem("tools2", JSON.stringify(tools));
+        alert("✅ Tool added!");
+      }
+    }
+
+    function resetTools(){
+      localStorage.removeItem("tools2");
+      alert("♻ All tools reset!");
+    }
+
+    function changeAdminPass(){
+      let newPass = prompt("Enter new Admin Password:");
+      if(newPass){
+        localStorage.setItem("adminPassword", newPass);
+        alert("✅ Admin password changed!");
+      }
+    }
+  </script>
+</body>
+</html>
