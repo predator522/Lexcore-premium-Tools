@@ -181,16 +181,15 @@
         });
     }
 
-    // Secret tap unlock
-    document.getElementById("secretZone").addEventListener("click", ()=>{
-      tapCount++;
-      clearTimeout(tapTimer);
-      tapTimer = setTimeout(()=>{ tapCount = 0; }, 5000); // reset after 5s
-      if(tapCount >= 10){
-        document.getElementById("adminPanel").style.display = "block";
-        tapCount = 0;
-      }
-    });
+    // Secret tap unlock → redirect to admin.html
+document.getElementById("secretZone").addEventListener("click", ()=>{
+  tapCount++;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(()=>{ tapCount = 0; }, 5000); // reset after 5s
+  if(tapCount >= 10){
+    window.location.href = "admin.html"; // go to separate Admin Panel page
+  }
+});
 
     // Admin login
     function checkAdmin(){
