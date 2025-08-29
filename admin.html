@@ -7,14 +7,23 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #141e30, #243b55);
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
       color: white;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
       text-align: center;
-      padding: 40px;
+    }
+    header {
+      padding: 20px;
+      font-size: 28px;
+      font-weight: bold;
+      background: rgba(0,0,0,0.5);
+      box-shadow: 0 0 15px rgba(0,0,0,0.6);
     }
     .container {
-      max-width: 600px;
-      margin: auto;
+      max-width: 800px;
+      margin: 20px auto;
       background: rgba(255,255,255,0.05);
       padding: 25px;
       border-radius: 15px;
@@ -26,28 +35,67 @@
       border: none;
       margin: 8px 0;
       font-size: 15px;
+    }
+    input {
       width: 100%;
+      margin-bottom: 12px;
     }
     button {
       background: linear-gradient(45deg, #00c6ff, #0072ff);
       color: white;
       cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: linear-gradient(45deg, #ff512f, #dd2476);
+    }
+    .tool-item {
+      background: rgba(0,0,0,0.4);
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tool-item span {
+      font-weight: bold;
+    }
+    .tool-actions button {
+      margin-left: 5px;
+      padding: 5px 10px;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
-  <h1>⚙️ Admin Panel</h1>
+  <header>⚙️ Lexcore Admin Panel ⚙️</header>
 
-  <div id="adminLogin" class="container">
+  <!-- Admin Login -->
+  <div id="loginBox" class="container">
     <h2>🔑 Enter Admin Password</h2>
-    <input type="password" id="adminPass" placeholder="Admin password">
-    <button onclick="checkAdmin()">Unlock</button>
+    <input type="password" id="adminPass" placeholder="Enter admin password">
+    <button onclick="checkAdmin()">Unlock Admin</button>
   </div>
 
+  <!-- Admin Controls -->
   <div id="adminContent" class="container" style="display:none;">
-    <h2>🔐 Update Toolkit Password</h2>
+    <h2>✅ Welcome, Admin</h2>
+
+    <!-- Change Toolkit Password -->
+    <h3>🔐 Change Toolkit Password</h3>
     <input type="text" id="newToolkitPass" placeholder="New Toolkit Password">
-    <button onclick="updateToolkitPass()">Update</button>
+    <button onclick="updateToolkitPass()">Update Password</button>
+
+    <hr style="margin:20px 0; border:1px solid rgba(255,255,255,0.2)">
+
+    <!-- Manage Tools -->
+    <h3>🛠 Manage Tools</h3>
+    <input type="text" id="toolName" placeholder="Tool name">
+    <input type="text" id="toolLink" placeholder="Tool link">
+    <button onclick="addTool()">➕ Add Tool</button>
+
+    <div id="toolsList" style="margin-top:20px; text-align:left;"></div>
   </div>
 
   <script>
@@ -58,36 +106,105 @@
     let binData = null;
 
     async function loadData(){
-      let res = await fetch(BIN_URL, { headers: { "X-Master-Key": API_KEY }});
-      let data = await res.json();
-      binData = data.record;
+      try {
+        let res = await fetch(BIN_URL, { headers: { "X-Master-Key": API_KEY }});
+        let data = await res.json();
+        binData = data.record;
+        console.log("✅ Data loaded", binData);
+      } catch (e) {
+        console.error("Load failed", e);
+      }
     }
 
+    // Admin login
     function checkAdmin(){
       let input = document.getElementById("adminPass").value;
       if(input === binData.keys.admin){
-        document.getElementById("adminLogin").style.display = "none";
+        document.getElementById("loginBox").style.display = "none";
         document.getElementById("adminContent").style.display = "block";
+        renderTools();
       } else {
         alert("❌ Wrong admin password!");
       }
     }
 
+    // Update toolkit password
     async function updateToolkitPass(){
       let newPass = document.getElementById("newToolkitPass").value;
+      if(newPass.trim() === "") return alert("Enter a password");
       binData.keys.toolkit = newPass;
-      await fetch(BIN_URL, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Master-Key": API_KEY
-        },
-        body: JSON.stringify(binData)
+      await saveData("✅ Toolkit password updated!");
+    }
+
+    // Add tool
+    async function addTool(){
+      let name = document.getElementById("toolName").value.trim();
+      let link = document.getElementById("toolLink").value.trim();
+      if(!name || !link) return alert("Enter both name and link");
+
+      binData.tools.push({ name, link });
+      await saveData("✅ Tool added!");
+      document.getElementById("toolName").value = "";
+      document.getElementById("toolLink").value = "";
+      renderTools();
+    }
+
+    // Edit tool
+    async function editTool(index){
+      let newName = prompt("Enter new name:", binData.tools[index].name);
+      let newLink = prompt("Enter new link:", binData.tools[index].link);
+      if(newName && newLink){
+        binData.tools[index].name = newName;
+        binData.tools[index].link = newLink;
+        await saveData("✅ Tool updated!");
+        renderTools();
+      }
+    }
+
+    // Delete tool
+    async function deleteTool(index){
+      if(confirm("Are you sure you want to delete this tool?")){
+        binData.tools.splice(index,1);
+        await saveData("✅ Tool deleted!");
+        renderTools();
+      }
+    }
+
+    // Save changes
+    async function saveData(msg){
+      try {
+        await fetch(BIN_URL, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": API_KEY
+          },
+          body: JSON.stringify(binData)
+        });
+        alert(msg);
+      } catch (e) {
+        alert("❌ Update failed");
+      }
+    }
+
+    // Render tools list
+    function renderTools(){
+      let container = document.getElementById("toolsList");
+      container.innerHTML = "";
+      binData.tools.forEach((t, i)=>{
+        container.innerHTML += `
+          <div class="tool-item">
+            <span>${t.name}</span>
+            <div class="tool-actions">
+              <button onclick="editTool(${i})">✏️ Edit</button>
+              <button onclick="deleteTool(${i})">🗑 Delete</button>
+            </div>
+          </div>
+        `;
       });
-      alert("✅ Toolkit password updated!");
     }
 
     loadData();
   </script>
 </body>
-</html>
+</html> 
