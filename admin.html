@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lexcore Toolkit</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #141e30, #243b55);
+      color: white;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      text-align: center;
+    }
+    header {
+      padding: 20px;
+      font-size: 28px;
+      font-weight: bold;
+      background: rgba(0,0,0,0.4);
+      box-shadow: 0 0 15px rgba(0,0,0,0.6);
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: rgba(255,255,255,0.05);
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.6);
+    }
+    input, button {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin: 8px 0;
+      font-size: 15px;
+    }
+    input {
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    button {
+      background: linear-gradient(45deg, #00c6ff, #0072ff);
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: linear-gradient(45deg, #ff512f, #dd2476);
+    }
+    .tool-item {
+      background: rgba(0,0,0,0.4);
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tool-item span {
+      font-weight: bold;
+    }
+    #searchBox {
+      width: 100%;
+      margin-bottom: 20px;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>⚡ Lexcore Toolkit ⚡</header>
+
+  <div class="container">
+    <h2>🔑 Enter Toolkit Password</h2>
+    <input type="password" id="passwordInput" placeholder="Enter password...">
+    <button onclick="checkPassword()">🔓 Unlock</button>
+  </div>
+
+  <div id="toolSection" class="container" style="display:none;">
+    <h2>🛠 Available Tools</h2>
+    <input type="text" id="searchBox" placeholder="🔍 Search tools..." onkeyup="filterTools()">
+    <div id="toolsList"></div>
+  </div>
+
+  <script>
+    const BIN_ID = "68b01908ae596e708fd9d7ed"; 
+    const API_KEY = "$2a$10$JGRQTj.hSG5JBwt.sbxTxem2drGj0diI1p81318H6O12kD4ljsyHK"; 
+    const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+    let binData = { tools: [], keys: { toolkit: "T3RROR REBORN", admin: "King Tesla" } };
+
+    // Load bin data
+    async function loadData(){
+      try {
+        let res = await fetch(BIN_URL, {
+          headers: { "X-Master-Key": API_KEY }
+        });
+        let data = await res.json();
+        binData = data.record;
+      } catch (e) {
+        console.error("Load failed", e);
+      }
+    }
+
+    // Check password
+    function checkPassword(){
+      let input = document.getElementById("passwordInput").value;
+      if(input === binData.keys.toolkit){
+        document.querySelector(".container").style.display = "none";
+        document.getElementById("toolSection").style.display = "block";
+        renderTools();
+      } else {
+        alert("❌ Wrong password!");
+      }
+    }
+
+    // Render tools
+    function renderTools(){
+      let container = document.getElementById("toolsList");
+      container.innerHTML = "";
+      binData.tools.forEach((t)=>{
+        container.innerHTML += `
+          <div class="tool-item">
+            <span>${t.name}</span>
+            <a href="${t.link}" target="_blank">🔗 Open</a>
+          </div>
+        `;
+      });
+    }
+
+    // Filter tools
+    function filterTools(){
+      let search = document.getElementById("searchBox").value.toLowerCase();
+      let container = document.getElementById("toolsList");
+      container.innerHTML = "";
+      binData.tools
+        .filter(t => t.name.toLowerCase().includes(search))
+        .forEach((t)=>{
+          container.innerHTML += `
+            <div class="tool-item">
+              <span>${t.name}</span>
+              <a href="${t.link}" target="_blank">🔗 Open</a>
+            </div>
+          `;
+        });
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
