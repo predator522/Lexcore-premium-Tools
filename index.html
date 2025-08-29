@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lexcore Toolkit</title>
+  <title>Lexcore Premium Tools</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -68,29 +68,38 @@
       font-size: 16px;
       border-radius: 10px;
     }
-    /* Secret tap zone */
+    /* Secret tap zone - now fully invisible */
     #secretZone {
       position: fixed;
       bottom: 0;
       left: 0;
       width: 50px;
       height: 50px;
-      background: rgba(255,0,0,0.2); /* make faint visible for testing */
+      background: transparent; /* no color at all */
       z-index: 1000;
     }
   </style>
 </head>
 <body>
-  <header>⚡ Lexcore Toolkit ⚡</header>
+  <header>⚡ Lexcore Premium Tools ⚡</header>
 
-  <!-- Toolkit Login -->
-  <div id="loginBox" class="container">
+  <!-- Step 1: Join WhatsApp channels -->
+  <div id="joinBox" class="container">
+    <h2>📢 Join Channels First If you haven't joined don't click on i have joined please</h2>
+    <p>You must join these channels before using the toolkit:</p>
+    <p><a href="https://whatsapp.com/channel/0029VbB5v0rC1Fu7HYVtk51f" target="_blank">🔗 LexCore</a></p>
+    <p><a href="https://whatsapp.com/channel/0029VbB4AeoF1YlZVNDXUe2v" target="_blank">🔗 ShadowEthix</a></p>
+    <button onclick="proceedToLogin()">✅ I have joined both</button>
+  </div>
+
+  <!-- Step 2: Toolkit Login -->
+  <div id="loginBox" class="container" style="display:none;">
     <h2>🔑 Enter Toolkit Password</h2>
     <input type="password" id="passwordInput" placeholder="Enter password...">
     <button onclick="checkPassword()">🔓 Unlock</button>
   </div>
 
-  <!-- Toolkit Tools -->
+  <!-- Step 3: Toolkit Tools -->
   <div id="toolSection" class="container" style="display:none;">
     <h2>🛠 Available Tools</h2>
     <input type="text" id="searchBox" placeholder="🔍 Search tools..." onkeyup="filterTools()">
@@ -121,6 +130,20 @@
     let binData = null; 
     let tapCount = 0;
     let tapTimer = null;
+
+    // ✅ Show correct section on load
+    window.onload = function(){
+      if(localStorage.getItem("joinedChannels") === "true"){
+        document.getElementById("joinBox").style.display = "none";
+        document.getElementById("loginBox").style.display = "block";
+      }
+    }
+
+    function proceedToLogin(){
+      localStorage.setItem("joinedChannels", "true");
+      document.getElementById("joinBox").style.display = "none";
+      document.getElementById("loginBox").style.display = "block";
+    }
 
     // Load data
     async function loadData(){
@@ -182,14 +205,14 @@
     }
 
     // Secret tap unlock → redirect to admin.html
-document.getElementById("secretZone").addEventListener("click", ()=>{
-  tapCount++;
-  clearTimeout(tapTimer);
-  tapTimer = setTimeout(()=>{ tapCount = 0; }, 5000); // reset after 5s
-  if(tapCount >= 10){
-    window.location.href = "admin.html"; // go to separate Admin Panel page
-  }
-});
+    document.getElementById("secretZone").addEventListener("click", ()=>{
+      tapCount++;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(()=>{ tapCount = 0; }, 5000);
+      if(tapCount >= 10){
+        window.location.href = "admin.html"; // redirect to Admin Panel page
+      }
+    });
 
     // Admin login
     function checkAdmin(){
@@ -207,7 +230,7 @@ document.getElementById("secretZone").addEventListener("click", ()=>{
       if(newPass.trim() === "") return alert("Enter a password");
       binData.keys.toolkit = newPass;
       try {
-        let res = await fetch(BIN_URL, {
+        await fetch(BIN_URL, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -224,4 +247,4 @@ document.getElementById("secretZone").addEventListener("click", ()=>{
     loadData();
   </script>
 </body>
-</html> 
+</html>
