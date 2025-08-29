@@ -68,36 +68,64 @@
       font-size: 16px;
       border-radius: 10px;
     }
+    /* Secret tap zone */
+    #secretZone {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 50px;
+      height: 50px;
+      background: rgba(255,0,0,0.2); /* make faint visible for testing */
+      z-index: 1000;
+    }
   </style>
 </head>
 <body>
   <header>⚡ Lexcore Toolkit ⚡</header>
 
+  <!-- Toolkit Login -->
   <div id="loginBox" class="container">
     <h2>🔑 Enter Toolkit Password</h2>
     <input type="password" id="passwordInput" placeholder="Enter password...">
     <button onclick="checkPassword()">🔓 Unlock</button>
   </div>
 
+  <!-- Toolkit Tools -->
   <div id="toolSection" class="container" style="display:none;">
     <h2>🛠 Available Tools</h2>
     <input type="text" id="searchBox" placeholder="🔍 Search tools..." onkeyup="filterTools()">
     <div id="toolsList"></div>
   </div>
 
+  <!-- Hidden Admin Panel -->
+  <div id="adminPanel" class="container" style="display:none;">
+    <h2>⚙️ Admin Panel</h2>
+    <input type="password" id="adminPass" placeholder="Enter admin password">
+    <button onclick="checkAdmin()">Unlock Admin</button>
+
+    <div id="adminContent" style="display:none; margin-top:20px;">
+      <h3>🔐 Change Access Keys</h3>
+      <input type="text" id="newToolkitPass" placeholder="New Toolkit Password">
+      <button onclick="updateToolkitPass()">Update Toolkit Key</button>
+    </div>
+  </div>
+
+  <!-- Hidden Tap Zone -->
+  <div id="secretZone"></div>
+
   <script>
     const BIN_ID = "68b01908ae596e708fd9d7ed"; 
     const API_KEY = "$2a$10$JGRQTj.hSG5JBwt.sbxTxem2drGj0diI1p81318H6O12kD4ljsyHK"; 
     const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-    let binData = null; // start as null so we know when it's loaded
+    let binData = null; 
+    let tapCount = 0;
+    let tapTimer = null;
 
-    // Load bin data
+    // Load data
     async function loadData(){
       try {
-        let res = await fetch(BIN_URL, {
-          headers: { "X-Master-Key": API_KEY }
-        });
+        let res = await fetch(BIN_URL, { headers: { "X-Master-Key": API_KEY }});
         let data = await res.json();
         binData = data.record;
         console.log("✅ Data loaded", binData);
@@ -106,13 +134,12 @@
       }
     }
 
-    // Check password
+    // Toolkit login
     function checkPassword(){
       if(!binData){ 
         alert("⏳ Please wait, loading data...");
         return;
       }
-
       let input = document.getElementById("passwordInput").value;
       if(input === binData.keys.toolkit){
         document.getElementById("loginBox").style.display = "none";
@@ -137,7 +164,7 @@
       });
     }
 
-    // Filter tools
+    // Search
     function filterTools(){
       let search = document.getElementById("searchBox").value.toLowerCase();
       let container = document.getElementById("toolsList");
@@ -154,7 +181,48 @@
         });
     }
 
+    // Secret tap unlock
+    document.getElementById("secretZone").addEventListener("click", ()=>{
+      tapCount++;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(()=>{ tapCount = 0; }, 5000); // reset after 5s
+      if(tapCount >= 10){
+        document.getElementById("adminPanel").style.display = "block";
+        tapCount = 0;
+      }
+    });
+
+    // Admin login
+    function checkAdmin(){
+      let input = document.getElementById("adminPass").value;
+      if(input === binData.keys.admin){
+        document.getElementById("adminContent").style.display = "block";
+      } else {
+        alert("❌ Wrong admin password!");
+      }
+    }
+
+    // Update toolkit password
+    async function updateToolkitPass(){
+      let newPass = document.getElementById("newToolkitPass").value;
+      if(newPass.trim() === "") return alert("Enter a password");
+      binData.keys.toolkit = newPass;
+      try {
+        let res = await fetch(BIN_URL, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": API_KEY
+          },
+          body: JSON.stringify(binData)
+        });
+        alert("✅ Toolkit password updated!");
+      } catch (e) {
+        alert("❌ Update failed");
+      }
+    }
+
     loadData();
   </script>
 </body>
-</html>
+</html> 
