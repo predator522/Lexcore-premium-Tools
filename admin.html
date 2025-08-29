@@ -3,27 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lexcore Toolkit</title>
+  <title>Lexcore Admin Panel</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: linear-gradient(135deg, #141e30, #243b55);
       color: white;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
       text-align: center;
-    }
-    header {
-      padding: 20px;
-      font-size: 28px;
-      font-weight: bold;
-      background: rgba(0,0,0,0.4);
-      box-shadow: 0 0 15px rgba(0,0,0,0.6);
+      padding: 40px;
     }
     .container {
-      max-width: 800px;
-      margin: 20px auto;
+      max-width: 600px;
+      margin: auto;
       background: rgba(255,255,255,0.05);
       padding: 25px;
       border-radius: 15px;
@@ -35,54 +26,28 @@
       border: none;
       margin: 8px 0;
       font-size: 15px;
-    }
-    input {
       width: 100%;
-      margin-bottom: 12px;
     }
     button {
       background: linear-gradient(45deg, #00c6ff, #0072ff);
       color: white;
       cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover {
-      background: linear-gradient(45deg, #ff512f, #dd2476);
-    }
-    .tool-item {
-      background: rgba(0,0,0,0.4);
-      padding: 12px;
-      margin: 10px 0;
-      border-radius: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .tool-item span {
-      font-weight: bold;
-    }
-    #searchBox {
-      width: 100%;
-      margin-bottom: 20px;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 10px;
     }
   </style>
 </head>
 <body>
-  <header>⚡ Lexcore Toolkit ⚡</header>
+  <h1>⚙️ Admin Panel</h1>
 
-  <div class="container">
-    <h2>🔑 Enter Toolkit Password</h2>
-    <input type="password" id="passwordInput" placeholder="Enter password...">
-    <button onclick="checkPassword()">🔓 Unlock</button>
+  <div id="adminLogin" class="container">
+    <h2>🔑 Enter Admin Password</h2>
+    <input type="password" id="adminPass" placeholder="Admin password">
+    <button onclick="checkAdmin()">Unlock</button>
   </div>
 
-  <div id="toolSection" class="container" style="display:none;">
-    <h2>🛠 Available Tools</h2>
-    <input type="text" id="searchBox" placeholder="🔍 Search tools..." onkeyup="filterTools()">
-    <div id="toolsList"></div>
+  <div id="adminContent" class="container" style="display:none;">
+    <h2>🔐 Update Toolkit Password</h2>
+    <input type="text" id="newToolkitPass" placeholder="New Toolkit Password">
+    <button onclick="updateToolkitPass()">Update</button>
   </div>
 
   <script>
@@ -90,62 +55,36 @@
     const API_KEY = "$2a$10$JGRQTj.hSG5JBwt.sbxTxem2drGj0diI1p81318H6O12kD4ljsyHK"; 
     const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-    let binData = { tools: [], keys: { toolkit: "T3RROR REBORN", admin: "King Tesla" } };
+    let binData = null;
 
-    // Load bin data
     async function loadData(){
-      try {
-        let res = await fetch(BIN_URL, {
-          headers: { "X-Master-Key": API_KEY }
-        });
-        let data = await res.json();
-        binData = data.record;
-      } catch (e) {
-        console.error("Load failed", e);
-      }
+      let res = await fetch(BIN_URL, { headers: { "X-Master-Key": API_KEY }});
+      let data = await res.json();
+      binData = data.record;
     }
 
-    // Check password
-    function checkPassword(){
-      let input = document.getElementById("passwordInput").value;
-      if(input === binData.keys.toolkit){
-        document.querySelector(".container").style.display = "none";
-        document.getElementById("toolSection").style.display = "block";
-        renderTools();
+    function checkAdmin(){
+      let input = document.getElementById("adminPass").value;
+      if(input === binData.keys.admin){
+        document.getElementById("adminLogin").style.display = "none";
+        document.getElementById("adminContent").style.display = "block";
       } else {
-        alert("❌ Wrong password!");
+        alert("❌ Wrong admin password!");
       }
     }
 
-    // Render tools
-    function renderTools(){
-      let container = document.getElementById("toolsList");
-      container.innerHTML = "";
-      binData.tools.forEach((t)=>{
-        container.innerHTML += `
-          <div class="tool-item">
-            <span>${t.name}</span>
-            <a href="${t.link}" target="_blank">🔗 Open</a>
-          </div>
-        `;
+    async function updateToolkitPass(){
+      let newPass = document.getElementById("newToolkitPass").value;
+      binData.keys.toolkit = newPass;
+      await fetch(BIN_URL, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Master-Key": API_KEY
+        },
+        body: JSON.stringify(binData)
       });
-    }
-
-    // Filter tools
-    function filterTools(){
-      let search = document.getElementById("searchBox").value.toLowerCase();
-      let container = document.getElementById("toolsList");
-      container.innerHTML = "";
-      binData.tools
-        .filter(t => t.name.toLowerCase().includes(search))
-        .forEach((t)=>{
-          container.innerHTML += `
-            <div class="tool-item">
-              <span>${t.name}</span>
-              <a href="${t.link}" target="_blank">🔗 Open</a>
-            </div>
-          `;
-        });
+      alert("✅ Toolkit password updated!");
     }
 
     loadData();
