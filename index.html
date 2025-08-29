@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lexcore Premium Tools</title>
+  <title>Lexcore Toolkit</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -71,9 +71,9 @@
   </style>
 </head>
 <body>
-  <header>⚡ Lexcore Premium Tools ⚡</header>
+  <header>⚡ Lexcore Toolkit ⚡</header>
 
-  <div class="container">
+  <div id="loginBox" class="container">
     <h2>🔑 Enter Toolkit Password</h2>
     <input type="password" id="passwordInput" placeholder="Enter password...">
     <button onclick="checkPassword()">🔓 Unlock</button>
@@ -90,7 +90,7 @@
     const API_KEY = "$2a$10$JGRQTj.hSG5JBwt.sbxTxem2drGj0diI1p81318H6O12kD4ljsyHK"; 
     const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-    let binData = { tools: [], keys: { toolkit: "T3RROR REBORN", admin: "King Tesla" } };
+    let binData = null; // start as null so we know when it's loaded
 
     // Load bin data
     async function loadData(){
@@ -100,6 +100,7 @@
         });
         let data = await res.json();
         binData = data.record;
+        console.log("✅ Data loaded", binData);
       } catch (e) {
         console.error("Load failed", e);
       }
@@ -107,9 +108,14 @@
 
     // Check password
     function checkPassword(){
+      if(!binData){ 
+        alert("⏳ Please wait, loading data...");
+        return;
+      }
+
       let input = document.getElementById("passwordInput").value;
       if(input === binData.keys.toolkit){
-        document.querySelector(".container").style.display = "none";
+        document.getElementById("loginBox").style.display = "none";
         document.getElementById("toolSection").style.display = "block";
         renderTools();
       } else {
